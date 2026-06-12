@@ -107,11 +107,25 @@
   .due-ok { background: #e8f5e0; color: #2e7d32; }
   .due-soon { background: #fff4e0; color: #a05c00; }
   .due-urgent { background: #fde8e8; color: #c0392b; }
+  .due-onetime { background: #f0ecfd; color: #5b3fa0; }
+  .due-done { background: rgba(0,0,0,0.06); color: var(--text-3); }
   @media (prefers-color-scheme: dark) {
     .due-ok { background: #1b3620; color: #66bb6a; }
     .due-soon { background: #2d2410; color: #ffb74d; }
     .due-urgent { background: #2d1414; color: #ef9a9a; }
+    .due-onetime { background: #2a1f45; color: #b39ddb; }
+    .due-done { background: rgba(255,255,255,0.06); color: var(--text-3); }
   }
+  .item.done { opacity: 0.5; }
+  .item.done .item-name { text-decoration: line-through; }
+  .done-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1.5px solid var(--border-med); background: none;
+    cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--text-3);
+  }
+  .done-check.checked { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+  .section-divider { font-size: 12px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; margin: 20px 0 8px; }
 
   /* Swipe actions */
   .item-actions { display: flex; gap: 6px; margin-top: 10px; }
@@ -174,6 +188,7 @@
     <button class="pill" data-cat="サブスク" onclick="setFilter(this)">サブスク</button>
     <button class="pill" data-cat="ローン" onclick="setFilter(this)">ローン</button>
     <button class="pill" data-cat="カード" onclick="setFilter(this)">カード</button>
+    <button class="pill" data-cat="1回のみ" onclick="setFilter(this)">1回のみ</button>
     <button class="pill" data-cat="その他" onclick="setFilter(this)">その他</button>
   </div>
 
@@ -201,11 +216,12 @@
           <option>サブスク</option>
           <option>ローン</option>
           <option>カード</option>
+          <option>1回のみ</option>
           <option>その他</option>
         </select>
       </div>
     </div>
-    <div class="form-grid">
+    <div class="form-grid" id="recurringFields">
       <div class="form-row">
         <label>引落日（毎月）</label>
         <input id="fDay" type="number" inputmode="numeric" min="1" max="31" placeholder="15" />
@@ -219,6 +235,10 @@
         </select>
       </div>
     </div>
+    <div class="form-row" id="onetimeField" style="display:none">
+      <label>支払日</label>
+      <input id="fDate" type="date" />
+    </div>
     <div class="form-row">
       <label>メモ（任意）</label>
       <input id="fNote" type="text" placeholder="例: 家族プラン、楽天カード" />
@@ -231,14 +251,15 @@
 </div>
 
 <script>
-const ICONS = { サブスク: '📺', ローン: '🏦', カード: '💳', その他: '📋' };
+const ICONS = { サブスク: '📺', ローン: '🏦', カード: '💳', '1回のみ': '🗓️', その他: '📋' };
 const CAT_COLORS = {
   サブスク: { bg: '#e6f1fb', text: '#185FA5' },
   ローン:   { bg: '#faeeda', text: '#854F0B' },
   カード:   { bg: '#fbeaf0', text: '#993556' },
+  '1回のみ':{ bg: '#f0ecfd', text: '#5b3fa0' },
   その他:   { bg: '#eaf3de', text: '#3B6D11' },
 };
-const CYCLES = { monthly: '毎月', yearly: '毎年', weekly: '毎週' };
+const CYCLES = { monthly: '毎月', yearly: '毎年', weekly: '毎週', onetime: '1回のみ' };
 
 let items = JSON.parse(localStorage.getItem('payment_items') || '[]');
 let nextId = parseInt(localStorage.getItem('payment_next_id') || '1');
@@ -251,29 +272,49 @@ function save() {
   localStorage.setItem('payment_next_id', String(nextId));
 }
 
-function daysUntil(day) {
-  const t = new Date();
+function daysUntilDate(dateStr) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const d = new Date(dateStr);
+  return Math.ceil((d - t) / 86400000);
+}
+
+function daysUntilDay(day) {
+  const t = new Date(); t.setHours(0,0,0,0);
   let next = new Date(t.getFullYear(), t.getMonth(), day);
   if (next <= t) next = new Date(t.getFullYear(), t.getMonth() + 1, day);
   return Math.ceil((next - t) / 86400000);
 }
 
+function daysUntil(item) {
+  return item.cycle === 'onetime' ? daysUntilDate(item.date) : daysUntilDay(item.day);
+}
+
 function monthlyEquiv(item) {
+  if (item.cycle === 'onetime') return 0;
   if (item.cycle === 'yearly') return Math.round(item.amount / 12);
   if (item.cycle === 'weekly') return Math.round(item.amount * 52 / 12);
   return item.amount;
 }
 
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getMonth()+1}月${d.getDate()}日`;
+}
+
 function renderSummary() {
-  const total = items.reduce((s, i) => s + monthlyEquiv(i), 0);
-  const nearest = items.length
-    ? items.slice().sort((a, b) => daysUntil(a.day) - daysUntil(b.day))[0]
+  const recurring = items.filter(i => i.cycle !== 'onetime');
+  const onetime = items.filter(i => i.cycle === 'onetime' && !i.done);
+  const total = recurring.reduce((s, i) => s + monthlyEquiv(i), 0);
+  const onetimeTotal = onetime.reduce((s, i) => s + i.amount, 0);
+  const allActive = items.filter(i => !i.done);
+  const nearest = allActive.length
+    ? allActive.slice().sort((a, b) => daysUntil(a) - daysUntil(b))[0]
     : null;
   document.getElementById('summary').innerHTML = `
     <div class="stat summary-wide">
-      <div class="stat-label">月額合計（目安）</div>
+      <div class="stat-label">月額合計（定期）</div>
       <div class="stat-value">¥${total.toLocaleString()}</div>
-      <div class="stat-sub">${items.length}件 登録中</div>
+      <div class="stat-sub">${recurring.length}件の定期支払い${onetimeTotal ? ' · 1回のみ ¥' + onetimeTotal.toLocaleString() + ' 残り' : ''}</div>
     </div>
     <div class="stat">
       <div class="stat-label">年額換算</div>
@@ -281,45 +322,89 @@ function renderSummary() {
     </div>
     <div class="stat">
       <div class="stat-label">次の引落</div>
-      <div class="stat-value" style="font-size:20px">${nearest ? daysUntil(nearest.day) + '日後' : '—'}</div>
+      <div class="stat-value" style="font-size:20px">${nearest ? daysUntil(nearest) + '日後' : '—'}</div>
       <div class="stat-sub">${nearest ? nearest.name : ''}</div>
     </div>
   `;
 }
 
 function renderItems() {
-  const filtered = currentFilter === 'all' ? items : items.filter(i => i.cat === currentFilter);
-  const sorted = filtered.slice().sort((a, b) => daysUntil(a.day) - daysUntil(b.day));
   const el = document.getElementById('items');
-  if (!sorted.length) {
+  let filtered = currentFilter === 'all' ? items : items.filter(i => i.cat === currentFilter);
+
+  if (currentFilter === '1回のみ') {
+    const active = filtered.filter(i => !i.done).sort((a,b) => daysUntil(a)-daysUntil(b));
+    const done = filtered.filter(i => i.done).sort((a,b) => new Date(b.date)-new Date(a.date));
+    if (!active.length && !done.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>1回のみの支払いがありません</p></div>`;
+      return;
+    }
+    el.innerHTML =
+      (active.length ? active.map(i => itemHTML(i)).join('') : '') +
+      (done.length ? `<div class="section-divider">支払い済み</div>` + done.map(i => itemHTML(i)).join('') : '');
+    return;
+  }
+
+  const recurring = filtered.filter(i => i.cycle !== 'onetime').sort((a,b) => daysUntil(a)-daysUntil(b));
+  const onetimeActive = filtered.filter(i => i.cycle === 'onetime' && !i.done).sort((a,b) => daysUntil(a)-daysUntil(b));
+  const onetimeDone = filtered.filter(i => i.cycle === 'onetime' && i.done);
+
+  if (!recurring.length && !onetimeActive.length && !onetimeDone.length) {
     el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>まだ登録がありません<br>「＋」ボタンから追加してください</p></div>`;
     return;
   }
-  el.innerHTML = sorted.map(item => {
-    const d = daysUntil(item.day);
-    const dueCls = d <= 3 ? 'due-urgent' : d <= 7 ? 'due-soon' : 'due-ok';
-    const cc = CAT_COLORS[item.cat] || CAT_COLORS['その他'];
-    const expanded = expandedId === item.id;
-    return `
-    <div class="item" id="item-${item.id}">
-      <div class="item-icon" style="background:${cc.bg}">${ICONS[item.cat] || '📋'}</div>
-      <div class="item-body" onclick="toggleExpand(${item.id})">
-        <div class="item-name">${item.name}</div>
-        <div class="item-meta">
-          <span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${item.cat}</span>
-          <span class="item-note">${CYCLES[item.cycle]}${item.note ? ' · ' + item.note : ''}</span>
-        </div>
-        ${expanded ? `<div class="item-actions">
-          <button class="act-btn" onclick="event.stopPropagation();editItem(${item.id})">✏️ 編集</button>
-          <button class="act-btn delete" onclick="event.stopPropagation();deleteItem(${item.id})">🗑 削除</button>
-        </div>` : ''}
+
+  let html = '';
+  if (recurring.length) {
+    if (onetimeActive.length || onetimeDone.length) html += `<div class="section-divider">定期支払い</div>`;
+    html += recurring.map(i => itemHTML(i)).join('');
+  }
+  if (onetimeActive.length) {
+    html += `<div class="section-divider">1回のみ</div>` + onetimeActive.map(i => itemHTML(i)).join('');
+  }
+  if (onetimeDone.length) {
+    html += `<div class="section-divider">支払い済み</div>` + onetimeDone.map(i => itemHTML(i)).join('');
+  }
+  el.innerHTML = html;
+}
+
+function itemHTML(item) {
+  const cc = CAT_COLORS[item.cat] || CAT_COLORS['その他'];
+  const expanded = expandedId === item.id;
+  let dueCls, dueLabel;
+  if (item.done) {
+    dueCls = 'due-done'; dueLabel = '支払い済み';
+  } else if (item.cycle === 'onetime') {
+    const d = daysUntil(item);
+    dueCls = d < 0 ? 'due-urgent' : d <= 3 ? 'due-urgent' : d <= 7 ? 'due-soon' : 'due-onetime';
+    dueLabel = d < 0 ? `${Math.abs(d)}日超過` : `${formatDate(item.date)} / あと${d}日`;
+  } else {
+    const d = daysUntil(item);
+    dueCls = d <= 3 ? 'due-urgent' : d <= 7 ? 'due-soon' : 'due-ok';
+    dueLabel = `${item.day}日 / あと${d}日`;
+  }
+  const checkClass = item.done ? 'checked' : '';
+  const showCheck = item.cycle === 'onetime';
+  return `
+  <div class="item${item.done ? ' done' : ''}" id="item-${item.id}">
+    ${showCheck ? `<button class="done-check ${checkClass}" onclick="toggleDone(${item.id})" aria-label="完了">${item.done ? '✓' : ''}</button>` : ''}
+    <div class="item-icon" style="background:${cc.bg}">${ICONS[item.cat] || '📋'}</div>
+    <div class="item-body" onclick="toggleExpand(${item.id})">
+      <div class="item-name">${item.name}</div>
+      <div class="item-meta">
+        <span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${item.cat}</span>
+        <span class="item-note">${CYCLES[item.cycle] || ''}${item.note ? ' · ' + item.note : ''}</span>
       </div>
-      <div class="item-right">
-        <div class="item-amount">¥${item.amount.toLocaleString()}</div>
-        <div class="item-due ${dueCls}">${item.day}日 / あと${d}日</div>
-      </div>
-    </div>`;
-  }).join('');
+      ${expanded ? `<div class="item-actions">
+        <button class="act-btn" onclick="event.stopPropagation();editItem(${item.id})">✏️ 編集</button>
+        <button class="act-btn delete" onclick="event.stopPropagation();deleteItem(${item.id})">🗑 削除</button>
+      </div>` : ''}
+    </div>
+    <div class="item-right">
+      <div class="item-amount">¥${item.amount.toLocaleString()}</div>
+      <div class="item-due ${dueCls}">${dueLabel}</div>
+    </div>
+  </div>`;
 }
 
 function render() { renderSummary(); renderItems(); }
@@ -329,6 +414,12 @@ function toggleExpand(id) {
   renderItems();
 }
 
+function toggleDone(id) {
+  const idx = items.findIndex(i => i.id === id);
+  items[idx].done = !items[idx].done;
+  save(); render();
+}
+
 function setFilter(btn) {
   document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -336,24 +427,36 @@ function setFilter(btn) {
   renderItems();
 }
 
+function toggleOnetimeFields() {
+  const isOnetime = document.getElementById('fCat').value === '1回のみ';
+  document.getElementById('recurringFields').style.display = isOnetime ? 'none' : 'grid';
+  document.getElementById('onetimeField').style.display = isOnetime ? 'block' : 'none';
+}
+
 function openModal(id) {
   editingId = id || null;
-  const overlay = document.getElementById('modalOverlay');
   document.getElementById('modalTitle').textContent = id ? '支払いを編集' : '支払いを追加';
   if (id) {
     const it = items.find(i => i.id === id);
     document.getElementById('fName').value = it.name;
     document.getElementById('fAmount').value = it.amount;
     document.getElementById('fCat').value = it.cat;
-    document.getElementById('fDay').value = it.day;
-    document.getElementById('fCycle').value = it.cycle;
     document.getElementById('fNote').value = it.note || '';
+    if (it.cycle === 'onetime') {
+      document.getElementById('fDate').value = it.date || '';
+    } else {
+      document.getElementById('fDay').value = it.day;
+      document.getElementById('fCycle').value = it.cycle;
+    }
   } else {
     ['fName','fAmount','fDay','fNote'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fDate').value = '';
     document.getElementById('fCat').value = 'サブスク';
     document.getElementById('fCycle').value = 'monthly';
   }
-  overlay.classList.add('open');
+  toggleOnetimeFields();
+  document.getElementById('fCat').onchange = toggleOnetimeFields;
+  document.getElementById('modalOverlay').classList.add('open');
   setTimeout(() => document.getElementById('fName').focus(), 100);
 }
 
@@ -364,30 +467,37 @@ function saveItem() {
   const name = document.getElementById('fName').value.trim();
   const amount = parseInt(document.getElementById('fAmount').value);
   const cat = document.getElementById('fCat').value;
-  const day = parseInt(document.getElementById('fDay').value);
-  const cycle = document.getElementById('fCycle').value;
   const note = document.getElementById('fNote').value.trim();
-  if (!name || !amount || !day || day < 1 || day > 31) {
-    alert('名前・金額・引落日を正しく入力してください');
-    return;
+  const isOnetime = cat === '1回のみ';
+
+  if (!name || !amount) { alert('名前と金額を入力してください'); return; }
+
+  let itemData;
+  if (isOnetime) {
+    const date = document.getElementById('fDate').value;
+    if (!date) { alert('支払日を入力してください'); return; }
+    itemData = { name, amount, cat, cycle: 'onetime', date, note, done: false };
+  } else {
+    const day = parseInt(document.getElementById('fDay').value);
+    const cycle = document.getElementById('fCycle').value;
+    if (!day || day < 1 || day > 31) { alert('引落日を正しく入力してください'); return; }
+    itemData = { name, amount, cat, cycle, day, note };
   }
+
   if (editingId) {
     const idx = items.findIndex(i => i.id === editingId);
-    items[idx] = { id: editingId, name, amount, cat, day, cycle, note };
+    items[idx] = { id: editingId, ...itemData, done: items[idx].done };
   } else {
-    items.push({ id: nextId++, name, amount, cat, day, cycle, note });
+    items.push({ id: nextId++, ...itemData });
   }
-  save();
-  closeModal();
-  render();
+  save(); closeModal(); render();
 }
 
 function deleteItem(id) {
   if (!confirm('削除しますか？')) return;
   items = items.filter(i => i.id !== id);
   expandedId = null;
-  save();
-  render();
+  save(); render();
 }
 
 function editItem(id) { openModal(id); }
