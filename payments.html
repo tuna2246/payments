@@ -8,195 +8,180 @@
 <meta name="apple-mobile-web-app-title" content="支払い管理" />
 <meta name="theme-color" content="#ffffff" />
 <title>支払い管理</title>
-<link rel="manifest" href="manifest.json" />
 <style>
-  :root {
-    --bg: #f7f7f5;
-    --surface: #ffffff;
-    --border: rgba(0,0,0,0.1);
-    --border-med: rgba(0,0,0,0.18);
-    --text: #1a1a1a;
-    --text-2: #666;
-    --text-3: #999;
-    --radius: 14px;
-    --radius-sm: 10px;
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #111110;
-      --surface: #1e1e1c;
-      --border: rgba(255,255,255,0.1);
-      --border-med: rgba(255,255,255,0.18);
-      --text: #f0efe9;
-      --text-2: #999;
-      --text-3: #666;
-    }
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; color: var(--text); }
+:root {
+  --bg:#f7f7f5; --surface:#fff; --border:rgba(0,0,0,0.1); --border-med:rgba(0,0,0,0.18);
+  --text:#1a1a1a; --text-2:#666; --text-3:#aaa; --radius:14px;
+  --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#111110;--surface:#1e1e1c;--border:rgba(255,255,255,0.1);--border-med:rgba(255,255,255,0.18);--text:#f0efe9;--text-2:#999;--text-3:#555;}
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;color:var(--text);}
 
-  /* Header */
-  .header {
-    position: sticky; top: 0; z-index: 10;
-    background: var(--bg);
-    padding: calc(var(--safe-top) + 16px) 20px 12px;
-    border-bottom: 0.5px solid var(--border);
-  }
-  .header-inner { display: flex; align-items: center; justify-content: space-between; }
-  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-  .header-add {
-    width: 36px; height: 36px; border-radius: 50%;
-    background: var(--text); color: var(--bg);
-    border: none; font-size: 22px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 300; line-height: 1;
-  }
+/* NAV */
+.nav{display:flex;border-bottom:0.5px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:20;}
+.nav-tab{flex:1;padding:14px 4px 10px;font-size:12px;font-weight:600;text-align:center;border:none;background:none;color:var(--text-3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.nav-tab .nav-icon{font-size:20px;}
+.nav-tab.active{color:var(--text);}
+.nav-tab.active .nav-underline{width:20px;height:2px;background:var(--text);border-radius:2px;}
+.nav-underline{width:20px;height:2px;border-radius:2px;}
 
-  /* Content */
-  .content { padding: 16px 20px calc(var(--safe-bottom) + 24px); max-width: 480px; margin: 0 auto; }
+/* HEADER */
+.page-header{padding:calc(var(--safe-top) + 16px) 20px 0;}
+.page-header-inner{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.page-header h1{font-size:22px;font-weight:700;letter-spacing:-0.3px;}
+.add-btn{width:36px;height:36px;border-radius:50%;background:var(--text);color:var(--bg);border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300;}
 
-  /* Summary cards */
-  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-  .summary-wide { grid-column: span 2; }
-  .stat {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-  }
-  .stat-label { font-size: 11px; color: var(--text-2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
-  .stat-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-  .stat-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+/* CONTENT */
+.page{display:none;padding:16px 20px calc(var(--safe-bottom)+32px);max-width:480px;margin:0 auto;}
+.page.active{display:block;}
 
-  /* Filter pills */
-  .filters { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 16px; scrollbar-width: none; }
-  .filters::-webkit-scrollbar { display: none; }
-  .pill {
-    white-space: nowrap; border: 0.5px solid var(--border-med);
-    border-radius: 20px; padding: 6px 14px; font-size: 13px;
-    background: none; color: var(--text-2); cursor: pointer; font-weight: 500;
-  }
-  .pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+/* SUMMARY */
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.summary-wide{grid-column:span 2;}
+.stat{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+.stat-label{font-size:11px;color:var(--text-2);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.stat-value{font-size:24px;font-weight:700;letter-spacing:-0.5px;}
+.stat-sub{font-size:12px;color:var(--text-3);margin-top:2px;}
 
-  /* Section label */
-  .section-label { font-size: 12px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+/* FILTERS */
+.filters{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;scrollbar-width:none;}
+.filters::-webkit-scrollbar{display:none;}
+.pill{white-space:nowrap;border:0.5px solid var(--border-med);border-radius:20px;padding:6px 14px;font-size:13px;background:none;color:var(--text-2);cursor:pointer;font-weight:500;}
+.pill.active{background:var(--text);color:var(--bg);border-color:var(--text);}
 
-  /* Item list */
-  .items { display: flex; flex-direction: column; gap: 8px; }
-  .item {
-    background: var(--surface); border: 0.5px solid var(--border);
-    border-radius: var(--radius); padding: 14px 16px;
-    display: flex; align-items: center; gap: 12px;
-    position: relative;
-  }
-  .item-icon {
-    width: 40px; height: 40px; border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
-  }
-  .item-body { flex: 1; min-width: 0; }
-  .item-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .item-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
-  .cat-tag { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 6px; }
-  .item-note { font-size: 12px; color: var(--text-3); }
-  .item-right { text-align: right; flex-shrink: 0; }
-  .item-amount { font-size: 16px; font-weight: 700; }
-  .item-due { font-size: 12px; margin-top: 3px; font-weight: 500; padding: 2px 8px; border-radius: 6px; display: inline-block; }
-  .due-ok { background: #e8f5e0; color: #2e7d32; }
-  .due-soon { background: #fff4e0; color: #a05c00; }
-  .due-urgent { background: #fde8e8; color: #c0392b; }
-  .due-onetime { background: #f0ecfd; color: #5b3fa0; }
-  .due-done { background: rgba(0,0,0,0.06); color: var(--text-3); }
-  @media (prefers-color-scheme: dark) {
-    .due-ok { background: #1b3620; color: #66bb6a; }
-    .due-soon { background: #2d2410; color: #ffb74d; }
-    .due-urgent { background: #2d1414; color: #ef9a9a; }
-    .due-onetime { background: #2a1f45; color: #b39ddb; }
-    .due-done { background: rgba(255,255,255,0.06); color: var(--text-3); }
-  }
-  .item.done { opacity: 0.5; }
-  .item.done .item-name { text-decoration: line-through; }
-  .done-check {
-    width: 22px; height: 22px; border-radius: 50%;
-    border: 1.5px solid var(--border-med); background: none;
-    cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 13px; color: var(--text-3);
-  }
-  .done-check.checked { background: #2e7d32; border-color: #2e7d32; color: #fff; }
-  .section-divider { font-size: 12px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; margin: 20px 0 8px; }
+/* LIST */
+.section-label{font-size:12px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+.section-divider{font-size:12px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin:20px 0 8px;}
+.items{display:flex;flex-direction:column;gap:8px;}
+.item{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.item.done{opacity:.45;}
+.item.done .item-name{text-decoration:line-through;}
+.item-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.item-body{flex:1;min-width:0;}
+.item-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.item-meta{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;}
+.cat-tag{font-size:11px;font-weight:600;padding:2px 7px;border-radius:6px;}
+.item-note{font-size:12px;color:var(--text-3);}
+.item-right{text-align:right;flex-shrink:0;}
+.item-amount{font-size:16px;font-weight:700;}
+.item-due{font-size:12px;margin-top:3px;font-weight:500;padding:2px 8px;border-radius:6px;display:inline-block;}
+.due-ok{background:#e8f5e0;color:#2e7d32;}
+.due-soon{background:#fff4e0;color:#a05c00;}
+.due-urgent{background:#fde8e8;color:#c0392b;}
+.due-onetime{background:#f0ecfd;color:#5b3fa0;}
+.due-done{background:rgba(0,0,0,.06);color:var(--text-3);}
+@media(prefers-color-scheme:dark){
+  .due-ok{background:#1b3620;color:#66bb6a;}
+  .due-soon{background:#2d2410;color:#ffb74d;}
+  .due-urgent{background:#2d1414;color:#ef9a9a;}
+  .due-onetime{background:#2a1f45;color:#b39ddb;}
+  .due-done{background:rgba(255,255,255,.06);color:var(--text-3);}
+}
+.done-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border-med);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text-3);}
+.done-check.checked{background:#2e7d32;border-color:#2e7d32;color:#fff;}
+.item-actions{display:flex;gap:6px;margin-top:10px;}
+.act-btn{flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);font-size:13px;font-weight:500;cursor:pointer;background:none;color:var(--text-2);}
+.act-btn.delete{color:#c0392b;border-color:#f5c0c0;}
+@media(prefers-color-scheme:dark){.act-btn.delete{color:#ef9a9a;border-color:#5c2020;}}
+.empty{text-align:center;padding:48px 20px;color:var(--text-3);}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+.empty p{font-size:14px;}
 
-  /* Swipe actions */
-  .item-actions { display: flex; gap: 6px; margin-top: 10px; }
-  .act-btn {
-    flex: 1; padding: 8px; border-radius: 8px; border: 0.5px solid var(--border);
-    font-size: 13px; font-weight: 500; cursor: pointer; background: none; color: var(--text-2);
-  }
-  .act-btn.delete { color: #c0392b; border-color: #f5c0c0; }
-  @media (prefers-color-scheme: dark) {
-    .act-btn.delete { color: #ef9a9a; border-color: #5c2020; }
-  }
+/* CALENDAR */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.cal-nav-btn{background:none;border:0.5px solid var(--border-med);border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--text);}
+.cal-month{font-size:16px;font-weight:700;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:20px;}
+.cal-dow{text-align:center;font-size:11px;font-weight:600;color:var(--text-3);padding:4px 0;}
+.cal-day{text-align:center;padding:6px 2px;border-radius:8px;font-size:13px;min-height:48px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;}
+.cal-day:hover{background:var(--surface);}
+.cal-day.today .cal-num{background:var(--text);color:var(--bg);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;}
+.cal-day.other-month .cal-num{color:var(--text-3);}
+.cal-dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:36px;}
+.cal-dot{width:5px;height:5px;border-radius:50%;}
+.cal-upcoming{margin-top:4px;}
+.cal-upcoming-title{font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:8px;}
+.cal-event{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.cal-event-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cal-event-body{flex:1;min-width:0;}
+.cal-event-name{font-size:14px;font-weight:600;}
+.cal-event-sub{font-size:12px;color:var(--text-3);margin-top:1px;}
+.cal-event-amount{font-size:14px;font-weight:700;flex-shrink:0;}
 
-  /* Empty */
-  .empty { text-align: center; padding: 48px 20px; color: var(--text-3); }
-  .empty-icon { font-size: 40px; margin-bottom: 12px; }
-  .empty p { font-size: 14px; }
-
-  /* Modal */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; z-index: 50;
-    background: rgba(0,0,0,0.4); align-items: flex-end; justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface); width: 100%; max-width: 480px;
-    border-radius: 20px 20px 0 0; padding: 0 20px calc(var(--safe-bottom) + 20px);
-    max-height: 92vh; overflow-y: auto;
-  }
-  .modal-handle { width: 36px; height: 4px; background: var(--border-med); border-radius: 2px; margin: 12px auto 16px; }
-  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
-  .form-row { margin-bottom: 14px; }
-  .form-row label { display: block; font-size: 12px; color: var(--text-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-  .form-row input, .form-row select {
-    width: 100%; background: var(--bg); border: 0.5px solid var(--border-med);
-    border-radius: 10px; padding: 12px 14px; font-size: 16px; color: var(--text);
-    -webkit-appearance: none; outline: none;
-  }
-  .form-row input:focus, .form-row select:focus { border-color: var(--text); }
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
-  .btn { flex: 1; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; }
-  .btn-cancel { background: var(--bg); color: var(--text-2); border: 0.5px solid var(--border-med); }
-  .btn-save { background: var(--text); color: var(--bg); }
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.4);align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:0 20px calc(var(--safe-bottom)+20px);max-height:92vh;overflow-y:auto;}
+.modal-handle{width:36px;height:4px;background:var(--border-med);border-radius:2px;margin:12px auto 16px;}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:20px;}
+.form-row{margin-bottom:14px;}
+.form-row label{display:block;font-size:12px;color:var(--text-2);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.form-row input,.form-row select{width:100%;background:var(--bg);border:0.5px solid var(--border-med);border-radius:10px;padding:12px 14px;font-size:16px;color:var(--text);-webkit-appearance:none;outline:none;}
+.form-row input:focus,.form-row select:focus{border-color:var(--text);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-footer{display:flex;gap:10px;margin-top:20px;}
+.btn{flex:1;padding:14px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;border:none;}
+.btn-cancel{background:var(--bg);color:var(--text-2);border:0.5px solid var(--border-med);}
+.btn-save{background:var(--text);color:var(--bg);}
 </style>
 </head>
 <body>
 
-<header class="header">
-  <div class="header-inner">
-    <h1>💳 支払い管理</h1>
-    <button class="header-add" onclick="openModal()" aria-label="追加">+</button>
+<nav class="nav">
+  <button class="nav-tab active" onclick="showPage('list',this)">
+    <span class="nav-icon">📋</span><span>一覧</span><div class="nav-underline"></div>
+  </button>
+  <button class="nav-tab" onclick="showPage('calendar',this)">
+    <span class="nav-icon">📅</span><span>カレンダー</span><div class="nav-underline"></div>
+  </button>
+</nav>
+
+<!-- LIST PAGE -->
+<div class="page active" id="page-list">
+  <div class="page-header">
+    <div class="page-header-inner">
+      <h1>💳 支払い管理</h1>
+      <button class="add-btn" onclick="openModal()" aria-label="追加">+</button>
+    </div>
+    <div class="summary" id="summary"></div>
+    <div class="filters">
+      <button class="pill active" data-cat="all" onclick="setFilter(this)">すべて</button>
+      <button class="pill" data-cat="サブスク" onclick="setFilter(this)">サブスク</button>
+      <button class="pill" data-cat="ローン" onclick="setFilter(this)">ローン</button>
+      <button class="pill" data-cat="カード" onclick="setFilter(this)">カード</button>
+      <button class="pill" data-cat="その他" onclick="setFilter(this)">その他</button>
+    </div>
   </div>
-</header>
-
-<div class="content">
-  <div class="summary" id="summary"></div>
-
-  <div class="filters" id="filters">
-    <button class="pill active" data-cat="all" onclick="setFilter(this)">すべて</button>
-    <button class="pill" data-cat="サブスク" onclick="setFilter(this)">サブスク</button>
-    <button class="pill" data-cat="ローン" onclick="setFilter(this)">ローン</button>
-    <button class="pill" data-cat="カード" onclick="setFilter(this)">カード</button>
-    <button class="pill" data-cat="1回のみ" onclick="setFilter(this)">1回のみ</button>
-    <button class="pill" data-cat="その他" onclick="setFilter(this)">その他</button>
+  <div style="padding:0 20px calc(var(--safe-bottom)+32px);max-width:480px;margin:0 auto;">
+    <div class="section-label">支払い一覧</div>
+    <div class="items" id="items"></div>
   </div>
-
-  <div class="section-label">支払い一覧</div>
-  <div class="items" id="items"></div>
 </div>
 
-<!-- Modal -->
+<!-- CALENDAR PAGE -->
+<div class="page" id="page-calendar">
+  <div class="page-header">
+    <div class="page-header-inner">
+      <h1>📅 カレンダー</h1>
+      <button class="add-btn" onclick="openModal()" aria-label="追加">+</button>
+    </div>
+  </div>
+  <div style="padding:0 20px calc(var(--safe-bottom)+32px);max-width:480px;margin:0 auto;">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calMove(-1)">‹</button>
+      <span class="cal-month" id="calMonth"></span>
+      <button class="cal-nav-btn" onclick="calMove(1)">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-upcoming-title" id="calUpcomingTitle"></div>
+    <div class="cal-upcoming" id="calUpcoming"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -216,26 +201,24 @@
           <option>サブスク</option>
           <option>ローン</option>
           <option>カード</option>
-          <option>1回のみ</option>
           <option>その他</option>
         </select>
       </div>
     </div>
-    <div class="form-grid" id="recurringFields">
-      <div class="form-row">
-        <label>引落日（毎月）</label>
-        <input id="fDay" type="number" inputmode="numeric" min="1" max="31" placeholder="15" />
-      </div>
-      <div class="form-row">
-        <label>サイクル</label>
-        <select id="fCycle">
-          <option value="monthly">毎月</option>
-          <option value="yearly">毎年</option>
-          <option value="weekly">毎週</option>
-        </select>
-      </div>
+    <div class="form-row">
+      <label>支払いサイクル</label>
+      <select id="fCycle" onchange="toggleCycleFields()">
+        <option value="monthly">毎月</option>
+        <option value="yearly">毎年</option>
+        <option value="weekly">毎週</option>
+        <option value="onetime">1回のみ</option>
+      </select>
     </div>
-    <div class="form-row" id="onetimeField" style="display:none">
+    <div id="recurringFields" class="form-row">
+      <label>引落日（毎月）</label>
+      <input id="fDay" type="number" inputmode="numeric" min="1" max="31" placeholder="15" />
+    </div>
+    <div id="onetimeField" class="form-row" style="display:none">
       <label>支払日</label>
       <input id="fDate" type="date" />
     </div>
@@ -251,154 +234,176 @@
 </div>
 
 <script>
-const ICONS = { サブスク: '📺', ローン: '🏦', カード: '💳', '1回のみ': '🗓️', その他: '📋' };
-const CAT_COLORS = {
-  サブスク: { bg: '#e6f1fb', text: '#185FA5' },
-  ローン:   { bg: '#faeeda', text: '#854F0B' },
-  カード:   { bg: '#fbeaf0', text: '#993556' },
-  '1回のみ':{ bg: '#f0ecfd', text: '#5b3fa0' },
-  その他:   { bg: '#eaf3de', text: '#3B6D11' },
+const ICONS={サブスク:'📺',ローン:'🏦',カード:'💳',その他:'📋'};
+const CAT_COLORS={
+  サブスク:{bg:'#e6f1fb',text:'#185FA5',dot:'#185FA5'},
+  ローン:{bg:'#faeeda',text:'#854F0B',dot:'#E09020'},
+  カード:{bg:'#fbeaf0',text:'#993556',dot:'#D4537E'},
+  その他:{bg:'#eaf3de',text:'#3B6D11',dot:'#639922'},
 };
-const CYCLES = { monthly: '毎月', yearly: '毎年', weekly: '毎週', onetime: '1回のみ' };
+const CYCLES={monthly:'毎月',yearly:'毎年',weekly:'毎週',onetime:'1回のみ'};
+const DOW=['日','月','火','水','木','金','土'];
 
-let items = JSON.parse(localStorage.getItem('payment_items') || '[]');
-let nextId = parseInt(localStorage.getItem('payment_next_id') || '1');
-let editingId = null;
-let currentFilter = 'all';
-let expandedId = null;
+let items=JSON.parse(localStorage.getItem('payment_items')||'[]');
+let nextId=parseInt(localStorage.getItem('payment_next_id')||'1');
+let editingId=null;
+let currentFilter='all';
+let expandedId=null;
+let calYear=new Date().getFullYear();
+let calMonth=new Date().getMonth();
+let selectedCalDay=null;
 
-function save() {
-  localStorage.setItem('payment_items', JSON.stringify(items));
-  localStorage.setItem('payment_next_id', String(nextId));
+function save(){
+  localStorage.setItem('payment_items',JSON.stringify(items));
+  localStorage.setItem('payment_next_id',String(nextId));
 }
 
-function daysUntilDate(dateStr) {
-  const t = new Date(); t.setHours(0,0,0,0);
-  const d = new Date(dateStr);
-  return Math.ceil((d - t) / 86400000);
+function daysUntilDate(dateStr){
+  const t=new Date();t.setHours(0,0,0,0);
+  const d=new Date(dateStr);
+  return Math.ceil((d-t)/86400000);
 }
-
-function daysUntilDay(day) {
-  const t = new Date(); t.setHours(0,0,0,0);
-  let next = new Date(t.getFullYear(), t.getMonth(), day);
-  if (next <= t) next = new Date(t.getFullYear(), t.getMonth() + 1, day);
-  return Math.ceil((next - t) / 86400000);
+function daysUntilDay(day){
+  const t=new Date();t.setHours(0,0,0,0);
+  let next=new Date(t.getFullYear(),t.getMonth(),day);
+  if(next<=t)next=new Date(t.getFullYear(),t.getMonth()+1,day);
+  return Math.ceil((next-t)/86400000);
 }
-
-function daysUntil(item) {
-  return item.cycle === 'onetime' ? daysUntilDate(item.date) : daysUntilDay(item.day);
+function daysUntil(item){
+  return item.cycle==='onetime'?daysUntilDate(item.date):daysUntilDay(item.day);
 }
-
-function monthlyEquiv(item) {
-  if (item.cycle === 'onetime') return 0;
-  if (item.cycle === 'yearly') return Math.round(item.amount / 12);
-  if (item.cycle === 'weekly') return Math.round(item.amount * 52 / 12);
+function monthlyEquiv(item){
+  if(item.cycle==='onetime')return 0;
+  if(item.cycle==='yearly')return Math.round(item.amount/12);
+  if(item.cycle==='weekly')return Math.round(item.amount*52/12);
   return item.amount;
 }
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
+function formatDate(s){
+  const d=new Date(s);
   return `${d.getMonth()+1}月${d.getDate()}日`;
 }
+function cc(item){return CAT_COLORS[item.cat]||CAT_COLORS['その他'];}
 
-function renderSummary() {
-  const recurring = items.filter(i => i.cycle !== 'onetime');
-  const onetime = items.filter(i => i.cycle === 'onetime' && !i.done);
-  const total = recurring.reduce((s, i) => s + monthlyEquiv(i), 0);
-  const onetimeTotal = onetime.reduce((s, i) => s + i.amount, 0);
-  const allActive = items.filter(i => !i.done);
-  const nearest = allActive.length
-    ? allActive.slice().sort((a, b) => daysUntil(a) - daysUntil(b))[0]
-    : null;
-  document.getElementById('summary').innerHTML = `
+/* ── Which days in a given month have payments ── */
+function getPaymentDaysForMonth(year,month){
+  const map={};
+  const today=new Date();today.setHours(0,0,0,0);
+  items.forEach(item=>{
+    if(item.done)return;
+    let day;
+    if(item.cycle==='onetime'){
+      const d=new Date(item.date);
+      if(d.getFullYear()===year&&d.getMonth()===month)day=d.getDate();
+    } else if(item.cycle==='monthly'||item.cycle==='weekly'){
+      day=item.day;
+    } else if(item.cycle==='yearly'){
+      day=item.day;
+    }
+    if(day){
+      if(!map[day])map[day]=[];
+      map[day].push(item);
+    }
+  });
+  return map;
+}
+
+/* ── Payments on a specific date (for sidebar list) ── */
+function getPaymentsOnDay(year,month,day){
+  return items.filter(item=>{
+    if(item.done)return false;
+    if(item.cycle==='onetime'){
+      const d=new Date(item.date);
+      return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day;
+    }
+    return item.day===day;
+  });
+}
+
+/* ── Upcoming 30 days list ── */
+function getUpcoming30(){
+  return items
+    .filter(i=>!i.done)
+    .map(i=>({item:i,days:daysUntil(i)}))
+    .filter(x=>x.days>=0&&x.days<=30)
+    .sort((a,b)=>a.days-b.days);
+}
+
+/* ══ RENDER SUMMARY ══ */
+function renderSummary(){
+  const recurring=items.filter(i=>i.cycle!=='onetime');
+  const onetimeActive=items.filter(i=>i.cycle==='onetime'&&!i.done);
+  const total=recurring.reduce((s,i)=>s+monthlyEquiv(i),0);
+  const onetimeTotal=onetimeActive.reduce((s,i)=>s+i.amount,0);
+  const allActive=items.filter(i=>!i.done);
+  const nearest=allActive.length?allActive.slice().sort((a,b)=>daysUntil(a)-daysUntil(b))[0]:null;
+  document.getElementById('summary').innerHTML=`
     <div class="stat summary-wide">
       <div class="stat-label">月額合計（定期）</div>
       <div class="stat-value">¥${total.toLocaleString()}</div>
-      <div class="stat-sub">${recurring.length}件の定期支払い${onetimeTotal ? ' · 1回のみ ¥' + onetimeTotal.toLocaleString() + ' 残り' : ''}</div>
+      <div class="stat-sub">${recurring.length}件${onetimeTotal?` · 1回のみ ¥${onetimeTotal.toLocaleString()} 未払い`:''}</div>
     </div>
     <div class="stat">
       <div class="stat-label">年額換算</div>
-      <div class="stat-value" style="font-size:20px">¥${(total * 12).toLocaleString()}</div>
+      <div class="stat-value" style="font-size:20px">¥${(total*12).toLocaleString()}</div>
     </div>
     <div class="stat">
       <div class="stat-label">次の引落</div>
-      <div class="stat-value" style="font-size:20px">${nearest ? daysUntil(nearest) + '日後' : '—'}</div>
-      <div class="stat-sub">${nearest ? nearest.name : ''}</div>
-    </div>
-  `;
+      <div class="stat-value" style="font-size:20px">${nearest?daysUntil(nearest)+'日後':'—'}</div>
+      <div class="stat-sub">${nearest?nearest.name:''}</div>
+    </div>`;
 }
 
-function renderItems() {
-  const el = document.getElementById('items');
-  let filtered = currentFilter === 'all' ? items : items.filter(i => i.cat === currentFilter);
-
-  if (currentFilter === '1回のみ') {
-    const active = filtered.filter(i => !i.done).sort((a,b) => daysUntil(a)-daysUntil(b));
-    const done = filtered.filter(i => i.done).sort((a,b) => new Date(b.date)-new Date(a.date));
-    if (!active.length && !done.length) {
-      el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>1回のみの支払いがありません</p></div>`;
-      return;
-    }
-    el.innerHTML =
-      (active.length ? active.map(i => itemHTML(i)).join('') : '') +
-      (done.length ? `<div class="section-divider">支払い済み</div>` + done.map(i => itemHTML(i)).join('') : '');
+/* ══ RENDER LIST ══ */
+function renderItems(){
+  const el=document.getElementById('items');
+  let filtered=currentFilter==='all'?items:items.filter(i=>i.cat===currentFilter);
+  const recurring=filtered.filter(i=>i.cycle!=='onetime').sort((a,b)=>daysUntil(a)-daysUntil(b));
+  const onetimeActive=filtered.filter(i=>i.cycle==='onetime'&&!i.done).sort((a,b)=>daysUntil(a)-daysUntil(b));
+  const onetimeDone=filtered.filter(i=>i.cycle==='onetime'&&i.done).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(!recurring.length&&!onetimeActive.length&&!onetimeDone.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><p>まだ登録がありません<br>「＋」ボタンから追加してください</p></div>`;
     return;
   }
-
-  const recurring = filtered.filter(i => i.cycle !== 'onetime').sort((a,b) => daysUntil(a)-daysUntil(b));
-  const onetimeActive = filtered.filter(i => i.cycle === 'onetime' && !i.done).sort((a,b) => daysUntil(a)-daysUntil(b));
-  const onetimeDone = filtered.filter(i => i.cycle === 'onetime' && i.done);
-
-  if (!recurring.length && !onetimeActive.length && !onetimeDone.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>まだ登録がありません<br>「＋」ボタンから追加してください</p></div>`;
-    return;
+  let html='';
+  if(recurring.length){
+    if(onetimeActive.length||onetimeDone.length)html+=`<div class="section-divider">定期支払い</div>`;
+    html+=recurring.map(itemHTML).join('');
   }
-
-  let html = '';
-  if (recurring.length) {
-    if (onetimeActive.length || onetimeDone.length) html += `<div class="section-divider">定期支払い</div>`;
-    html += recurring.map(i => itemHTML(i)).join('');
-  }
-  if (onetimeActive.length) {
-    html += `<div class="section-divider">1回のみ</div>` + onetimeActive.map(i => itemHTML(i)).join('');
-  }
-  if (onetimeDone.length) {
-    html += `<div class="section-divider">支払い済み</div>` + onetimeDone.map(i => itemHTML(i)).join('');
-  }
-  el.innerHTML = html;
+  if(onetimeActive.length)html+=`<div class="section-divider">1回のみ</div>`+onetimeActive.map(itemHTML).join('');
+  if(onetimeDone.length)html+=`<div class="section-divider">支払い済み</div>`+onetimeDone.map(itemHTML).join('');
+  el.innerHTML=html;
 }
 
-function itemHTML(item) {
-  const cc = CAT_COLORS[item.cat] || CAT_COLORS['その他'];
-  const expanded = expandedId === item.id;
-  let dueCls, dueLabel;
-  if (item.done) {
-    dueCls = 'due-done'; dueLabel = '支払い済み';
-  } else if (item.cycle === 'onetime') {
-    const d = daysUntil(item);
-    dueCls = d < 0 ? 'due-urgent' : d <= 3 ? 'due-urgent' : d <= 7 ? 'due-soon' : 'due-onetime';
-    dueLabel = d < 0 ? `${Math.abs(d)}日超過` : `${formatDate(item.date)} / あと${d}日`;
+function itemHTML(item){
+  const c=cc(item);
+  const expanded=expandedId===item.id;
+  let dueCls,dueLabel;
+  if(item.done){dueCls='due-done';dueLabel='支払い済み';}
+  else if(item.cycle==='onetime'){
+    const d=daysUntil(item);
+    dueCls=d<0?'due-urgent':d<=3?'due-urgent':d<=7?'due-soon':'due-onetime';
+    dueLabel=d<0?`${Math.abs(d)}日超過`:`${formatDate(item.date)} / あと${d}日`;
   } else {
-    const d = daysUntil(item);
-    dueCls = d <= 3 ? 'due-urgent' : d <= 7 ? 'due-soon' : 'due-ok';
-    dueLabel = `${item.day}日 / あと${d}日`;
+    const d=daysUntil(item);
+    dueCls=d<=3?'due-urgent':d<=7?'due-soon':'due-ok';
+    dueLabel=`毎月${item.day}日 / あと${d}日`;
+    if(item.cycle==='yearly')dueLabel=`毎年${item.day}日`;
+    if(item.cycle==='weekly')dueLabel=`毎週 / あと${d}日`;
   }
-  const checkClass = item.done ? 'checked' : '';
-  const showCheck = item.cycle === 'onetime';
-  return `
-  <div class="item${item.done ? ' done' : ''}" id="item-${item.id}">
-    ${showCheck ? `<button class="done-check ${checkClass}" onclick="toggleDone(${item.id})" aria-label="完了">${item.done ? '✓' : ''}</button>` : ''}
-    <div class="item-icon" style="background:${cc.bg}">${ICONS[item.cat] || '📋'}</div>
+  const showCheck=item.cycle==='onetime';
+  return `<div class="item${item.done?' done':''}" id="item-${item.id}">
+    ${showCheck?`<button class="done-check${item.done?' checked':''}" onclick="toggleDone(${item.id})" aria-label="完了">${item.done?'✓':''}</button>`:''}
+    <div class="item-icon" style="background:${c.bg}">${ICONS[item.cat]||'📋'}</div>
     <div class="item-body" onclick="toggleExpand(${item.id})">
       <div class="item-name">${item.name}</div>
       <div class="item-meta">
-        <span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${item.cat}</span>
-        <span class="item-note">${CYCLES[item.cycle] || ''}${item.note ? ' · ' + item.note : ''}</span>
+        <span class="cat-tag" style="background:${c.bg};color:${c.text}">${item.cat}</span>
+        <span class="item-note">${CYCLES[item.cycle]||''}${item.note?' · '+item.note:''}</span>
       </div>
-      ${expanded ? `<div class="item-actions">
+      ${expanded?`<div class="item-actions">
         <button class="act-btn" onclick="event.stopPropagation();editItem(${item.id})">✏️ 編集</button>
         <button class="act-btn delete" onclick="event.stopPropagation();deleteItem(${item.id})">🗑 削除</button>
-      </div>` : ''}
+      </div>`:''}
     </div>
     <div class="item-right">
       <div class="item-amount">¥${item.amount.toLocaleString()}</div>
@@ -407,101 +412,191 @@ function itemHTML(item) {
   </div>`;
 }
 
-function render() { renderSummary(); renderItems(); }
+/* ══ RENDER CALENDAR ══ */
+function renderCalendar(){
+  const map=getPaymentDaysForMonth(calYear,calMonth);
+  const today=new Date();
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const daysInPrev=new Date(calYear,calMonth,0).getDate();
 
-function toggleExpand(id) {
-  expandedId = expandedId === id ? null : id;
-  renderItems();
+  document.getElementById('calMonth').textContent=`${calYear}年${calMonth+1}月`;
+
+  let html=DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+
+  // prev month padding
+  for(let i=0;i<firstDay;i++){
+    const d=daysInPrev-firstDay+1+i;
+    html+=`<div class="cal-day other-month"><span class="cal-num">${d}</span></div>`;
+  }
+
+  for(let d=1;d<=daysInMonth;d++){
+    const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    const payments=map[d]||[];
+    const dots=payments.slice(0,4).map(p=>{
+      const c=cc(p);
+      return `<div class="cal-dot" style="background:${c.dot}"></div>`;
+    }).join('');
+    const sel=selectedCalDay===d?'background:var(--surface);':'';
+    html+=`<div class="cal-day${isToday?' today':''}" style="${sel}" onclick="selectCalDay(${d})">
+      <span class="cal-num">${d}</span>
+      ${dots?`<div class="cal-dots">${dots}</div>`:''}
+    </div>`;
+  }
+
+  // next month padding
+  const total=firstDay+daysInMonth;
+  const remaining=(7-total%7)%7;
+  for(let i=1;i<=remaining;i++){
+    html+=`<div class="cal-day other-month"><span class="cal-num">${i}</span></div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML=html;
+  renderCalUpcoming();
 }
 
-function toggleDone(id) {
-  const idx = items.findIndex(i => i.id === id);
-  items[idx].done = !items[idx].done;
-  save(); render();
-}
+function renderCalUpcoming(){
+  const titleEl=document.getElementById('calUpcomingTitle');
+  const listEl=document.getElementById('calUpcoming');
 
-function setFilter(btn) {
-  document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentFilter = btn.dataset.cat;
-  renderItems();
-}
-
-function toggleOnetimeFields() {
-  const isOnetime = document.getElementById('fCat').value === '1回のみ';
-  document.getElementById('recurringFields').style.display = isOnetime ? 'none' : 'grid';
-  document.getElementById('onetimeField').style.display = isOnetime ? 'block' : 'none';
-}
-
-function openModal(id) {
-  editingId = id || null;
-  document.getElementById('modalTitle').textContent = id ? '支払いを編集' : '支払いを追加';
-  if (id) {
-    const it = items.find(i => i.id === id);
-    document.getElementById('fName').value = it.name;
-    document.getElementById('fAmount').value = it.amount;
-    document.getElementById('fCat').value = it.cat;
-    document.getElementById('fNote').value = it.note || '';
-    if (it.cycle === 'onetime') {
-      document.getElementById('fDate').value = it.date || '';
-    } else {
-      document.getElementById('fDay').value = it.day;
-      document.getElementById('fCycle').value = it.cycle;
+  if(selectedCalDay){
+    const payments=getPaymentsOnDay(calYear,calMonth,selectedCalDay);
+    titleEl.textContent=`${calMonth+1}月${selectedCalDay}日の支払い`;
+    if(!payments.length){
+      listEl.innerHTML=`<div style="font-size:13px;color:var(--text-3);padding:8px 0">この日の支払いはありません</div>`;
+      return;
     }
-  } else {
-    ['fName','fAmount','fDay','fNote'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('fDate').value = '';
-    document.getElementById('fCat').value = 'サブスク';
-    document.getElementById('fCycle').value = 'monthly';
+    listEl.innerHTML=payments.map(p=>{
+      const c=cc(p);
+      return `<div class="cal-event">
+        <div class="cal-event-dot" style="background:${c.dot}"></div>
+        <div class="cal-event-body">
+          <div class="cal-event-name">${p.name}</div>
+          <div class="cal-event-sub">${p.cat} · ${CYCLES[p.cycle]||''}</div>
+        </div>
+        <div class="cal-event-amount">¥${p.amount.toLocaleString()}</div>
+      </div>`;
+    }).join('');
+    return;
   }
-  toggleOnetimeFields();
-  document.getElementById('fCat').onchange = toggleOnetimeFields;
+
+  // default: upcoming 30 days
+  const upcoming=getUpcoming30();
+  titleEl.textContent='今後30日の支払い';
+  if(!upcoming.length){
+    listEl.innerHTML=`<div style="font-size:13px;color:var(--text-3);padding:8px 0">今後30日の支払いはありません</div>`;
+    return;
+  }
+  listEl.innerHTML=upcoming.map(({item:p,days})=>{
+    const c=cc(p);
+    const label=days===0?'今日':days===1?'明日':`${days}日後`;
+    const dueCls=days<=3?'due-urgent':days<=7?'due-soon':'due-ok';
+    return `<div class="cal-event">
+      <div class="cal-event-dot" style="background:${c.dot}"></div>
+      <div class="cal-event-body">
+        <div class="cal-event-name">${p.name}</div>
+        <div class="cal-event-sub">${p.cat} · ${CYCLES[p.cycle]||''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="cal-event-amount">¥${p.amount.toLocaleString()}</div>
+        <div class="item-due ${dueCls}" style="margin-top:3px">${label}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectCalDay(d){
+  selectedCalDay=selectedCalDay===d?null:d;
+  renderCalendar();
+}
+
+function calMove(dir){
+  calMonth+=dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  selectedCalDay=null;
+  renderCalendar();
+}
+
+/* ══ NAV ══ */
+function showPage(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='calendar')renderCalendar();
+}
+
+/* ══ INTERACTIONS ══ */
+function toggleExpand(id){expandedId=expandedId===id?null:id;renderItems();}
+function toggleDone(id){const idx=items.findIndex(i=>i.id===id);items[idx].done=!items[idx].done;save();render();}
+function setFilter(btn){
+  document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter=btn.dataset.cat;
+  renderItems();
+}
+function toggleCycleFields(){
+  const isOnetime=document.getElementById('fCycle').value==='onetime';
+  document.getElementById('recurringFields').style.display=isOnetime?'none':'block';
+  document.getElementById('onetimeField').style.display=isOnetime?'block':'none';
+}
+function openModal(id){
+  editingId=id||null;
+  document.getElementById('modalTitle').textContent=id?'支払いを編集':'支払いを追加';
+  if(id){
+    const it=items.find(i=>i.id===id);
+    document.getElementById('fName').value=it.name;
+    document.getElementById('fAmount').value=it.amount;
+    document.getElementById('fCat').value=it.cat;
+    document.getElementById('fCycle').value=it.cycle;
+    document.getElementById('fNote').value=it.note||'';
+    if(it.cycle==='onetime')document.getElementById('fDate').value=it.date||'';
+    else document.getElementById('fDay').value=it.day;
+  } else {
+    ['fName','fAmount','fDay','fNote'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('fDate').value='';
+    document.getElementById('fCat').value='サブスク';
+    document.getElementById('fCycle').value='monthly';
+  }
+  toggleCycleFields();
   document.getElementById('modalOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('fName').focus(), 100);
+  setTimeout(()=>document.getElementById('fName').focus(),100);
 }
-
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-function handleOverlayClick(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
-
-function saveItem() {
-  const name = document.getElementById('fName').value.trim();
-  const amount = parseInt(document.getElementById('fAmount').value);
-  const cat = document.getElementById('fCat').value;
-  const note = document.getElementById('fNote').value.trim();
-  const isOnetime = cat === '1回のみ';
-
-  if (!name || !amount) { alert('名前と金額を入力してください'); return; }
-
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function handleOverlayClick(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
+function saveItem(){
+  const name=document.getElementById('fName').value.trim();
+  const amount=parseInt(document.getElementById('fAmount').value);
+  const cat=document.getElementById('fCat').value;
+  const cycle=document.getElementById('fCycle').value;
+  const note=document.getElementById('fNote').value.trim();
+  if(!name||!amount){alert('名前と金額を入力してください');return;}
   let itemData;
-  if (isOnetime) {
-    const date = document.getElementById('fDate').value;
-    if (!date) { alert('支払日を入力してください'); return; }
-    itemData = { name, amount, cat, cycle: 'onetime', date, note, done: false };
+  if(cycle==='onetime'){
+    const date=document.getElementById('fDate').value;
+    if(!date){alert('支払日を入力してください');return;}
+    itemData={name,amount,cat,cycle,date,note,done:false};
   } else {
-    const day = parseInt(document.getElementById('fDay').value);
-    const cycle = document.getElementById('fCycle').value;
-    if (!day || day < 1 || day > 31) { alert('引落日を正しく入力してください'); return; }
-    itemData = { name, amount, cat, cycle, day, note };
+    const day=parseInt(document.getElementById('fDay').value);
+    if(!day||day<1||day>31){alert('引落日を正しく入力してください');return;}
+    itemData={name,amount,cat,cycle,day,note};
   }
-
-  if (editingId) {
-    const idx = items.findIndex(i => i.id === editingId);
-    items[idx] = { id: editingId, ...itemData, done: items[idx].done };
+  if(editingId){
+    const idx=items.findIndex(i=>i.id===editingId);
+    items[idx]={id:editingId,...itemData,done:items[idx].done};
   } else {
-    items.push({ id: nextId++, ...itemData });
+    items.push({id:nextId++,...itemData});
   }
-  save(); closeModal(); render();
+  save();closeModal();render();
 }
-
-function deleteItem(id) {
-  if (!confirm('削除しますか？')) return;
-  items = items.filter(i => i.id !== id);
-  expandedId = null;
-  save(); render();
+function deleteItem(id){
+  if(!confirm('削除しますか？'))return;
+  items=items.filter(i=>i.id!==id);expandedId=null;save();render();
 }
+function editItem(id){openModal(id);}
 
-function editItem(id) { openModal(id); }
-
+function render(){renderSummary();renderItems();}
 render();
 </script>
 </body>
