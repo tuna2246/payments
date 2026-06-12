@@ -215,9 +215,40 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Hel
         <option value="onetime">1回のみ</option>
       </select>
     </div>
-    <div id="recurringFields" class="form-row">
-      <label>引落日（毎月）</label>
-      <input id="fDay" type="number" inputmode="numeric" min="1" max="31" placeholder="15" />
+    <div id="recurringFields">
+      <div id="yearlyMonthField" class="form-row" style="display:none">
+        <label>引落月（毎年）</label>
+        <select id="fMonth">
+          <option value="1">1月</option>
+          <option value="2">2月</option>
+          <option value="3">3月</option>
+          <option value="4">4月</option>
+          <option value="5">5月</option>
+          <option value="6">6月</option>
+          <option value="7">7月</option>
+          <option value="8">8月</option>
+          <option value="9">9月</option>
+          <option value="10">10月</option>
+          <option value="11">11月</option>
+          <option value="12">12月</option>
+        </select>
+      </div>
+      <div id="dayField" class="form-row">
+        <label id="fDayLabel">引落日（毎月）</label>
+        <input id="fDay" type="number" inputmode="numeric" min="1" max="31" placeholder="15" />
+      </div>
+    </div>
+    <div id="weeklyField" class="form-row" style="display:none">
+      <label>引落曜日（毎週）</label>
+      <select id="fWeekday">
+        <option value="0">日曜日</option>
+        <option value="1">月曜日</option>
+        <option value="2">火曜日</option>
+        <option value="3">水曜日</option>
+        <option value="4">木曜日</option>
+        <option value="5">金曜日</option>
+        <option value="6">土曜日</option>
+      </select>
     </div>
     <div id="onetimeField" class="form-row" style="display:none">
       <label>支払日</label>
@@ -244,6 +275,7 @@ const CAT_COLORS={
 };
 const CYCLES={monthly:'毎月',yearly:'毎年',weekly:'毎週',onetime:'1回のみ'};
 const DOW=['日','月','火','水','木','金','土'];
+const WEEKDAYS=['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
 
 let items=JSON.parse(localStorage.getItem('payment_items')||'[]');
 let nextId=parseInt(localStorage.getItem('payment_next_id')||'1');
@@ -264,14 +296,43 @@ function daysUntilDate(dateStr){
   const d=new Date(dateStr);
   return Math.ceil((d-t)/86400000);
 }
+function dateDiffInDays(from,to){
+  const start=new Date(from);start.setHours(0,0,0,0);
+  const end=new Date(to);end.setHours(0,0,0,0);
+  return Math.ceil((end-start)/86400000);
+}
+function lastDayOfMonth(year,monthIndex){return new Date(year,monthIndex+1,0).getDate();}
+function clampDay(year,monthIndex,day){return Math.min(day,lastDayOfMonth(year,monthIndex));}
 function daysUntilDay(day){
   const t=new Date();t.setHours(0,0,0,0);
-  let next=new Date(t.getFullYear(),t.getMonth(),day);
-  if(next<=t)next=new Date(t.getFullYear(),t.getMonth()+1,day);
-  return Math.ceil((next-t)/86400000);
+  let next=new Date(t.getFullYear(),t.getMonth(),clampDay(t.getFullYear(),t.getMonth(),day));
+  if(next<=t){
+    const y=t.getMonth()===11?t.getFullYear()+1:t.getFullYear();
+    const m=(t.getMonth()+1)%12;
+    next=new Date(y,m,clampDay(y,m,day));
+  }
+  return dateDiffInDays(t,next);
+}
+function daysUntilYearly(month,day){
+  const t=new Date();t.setHours(0,0,0,0);
+  const monthIndex=(month||1)-1;
+  let next=new Date(t.getFullYear(),monthIndex,clampDay(t.getFullYear(),monthIndex,day));
+  if(next<=t)next=new Date(t.getFullYear()+1,monthIndex,clampDay(t.getFullYear()+1,monthIndex,day));
+  return dateDiffInDays(t,next);
+}
+function daysUntilWeekly(weekday){
+  const t=new Date();t.setHours(0,0,0,0);
+  const target=Number.isInteger(weekday)?weekday:new Date().getDay();
+  let add=(target-t.getDay()+7)%7;
+  if(add===0)add=7;
+  const next=new Date(t);next.setDate(t.getDate()+add);
+  return dateDiffInDays(t,next);
 }
 function daysUntil(item){
-  return item.cycle==='onetime'?daysUntilDate(item.date):daysUntilDay(item.day);
+  if(item.cycle==='onetime')return daysUntilDate(item.date);
+  if(item.cycle==='yearly')return daysUntilYearly(item.month||new Date().getMonth()+1,item.day);
+  if(item.cycle==='weekly')return daysUntilWeekly(Number.isInteger(item.weekday)?item.weekday:new Date().getDay());
+  return daysUntilDay(item.day);
 }
 function monthlyEquiv(item){
   if(item.cycle==='onetime')return 0;
@@ -288,27 +349,33 @@ function cc(item){return CAT_COLORS[item.cat]||CAT_COLORS['その他'];}
 /* ── Which days in a given month have payments ── */
 function getPaymentDaysForMonth(year,month){
   const map={};
-  const today=new Date();today.setHours(0,0,0,0);
+  const add=(day,item)=>{
+    if(!day)return;
+    if(!map[day])map[day]=[];
+    map[day].push(item);
+  };
   items.forEach(item=>{
     if(item.done)return;
-    let day;
     if(item.cycle==='onetime'){
       const d=new Date(item.date);
-      if(d.getFullYear()===year&&d.getMonth()===month)day=d.getDate();
-    } else if(item.cycle==='monthly'||item.cycle==='weekly'){
-      day=item.day;
+      if(d.getFullYear()===year&&d.getMonth()===month)add(d.getDate(),item);
+    } else if(item.cycle==='monthly'){
+      add(clampDay(year,month,item.day),item);
     } else if(item.cycle==='yearly'){
-      day=item.day;
-    }
-    if(day){
-      if(!map[day])map[day]=[];
-      map[day].push(item);
+      const yearlyMonth=(item.month||new Date().getMonth()+1)-1;
+      if(yearlyMonth===month)add(clampDay(year,month,item.day),item);
+    } else if(item.cycle==='weekly'){
+      const weekday=Number.isInteger(item.weekday)?item.weekday:new Date().getDay();
+      const daysInMonth=lastDayOfMonth(year,month);
+      for(let d=1;d<=daysInMonth;d++){
+        if(new Date(year,month,d).getDay()===weekday)add(d,item);
+      }
     }
   });
   return map;
 }
 
-/* ── Payments on a specific date (for sidebar list) ── */
+/* ══ Payments on a specific date (for sidebar list) ══ */
 function getPaymentsOnDay(year,month,day){
   return items.filter(item=>{
     if(item.done)return false;
@@ -316,7 +383,13 @@ function getPaymentsOnDay(year,month,day){
       const d=new Date(item.date);
       return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day;
     }
-    return item.day===day;
+    if(item.cycle==='monthly')return clampDay(year,month,item.day)===day;
+    if(item.cycle==='yearly')return (item.month||new Date().getMonth()+1)-1===month&&clampDay(year,month,item.day)===day;
+    if(item.cycle==='weekly'){
+      const weekday=Number.isInteger(item.weekday)?item.weekday:new Date().getDay();
+      return new Date(year,month,day).getDay()===weekday;
+    }
+    return false;
   });
 }
 
@@ -388,8 +461,8 @@ function itemHTML(item){
     const d=daysUntil(item);
     dueCls=d<=3?'due-urgent':d<=7?'due-soon':'due-ok';
     dueLabel=`毎月${item.day}日 / あと${d}日`;
-    if(item.cycle==='yearly')dueLabel=`毎年${item.day}日`;
-    if(item.cycle==='weekly')dueLabel=`毎週 / あと${d}日`;
+    if(item.cycle==='yearly')dueLabel=`毎年${item.month||new Date().getMonth()+1}月${item.day}日 / あと${d}日`;
+    if(item.cycle==='weekly')dueLabel=`毎週${WEEKDAYS[Number.isInteger(item.weekday)?item.weekday:new Date().getDay()]} / あと${d}日`;
   }
   const showCheck=item.cycle==='onetime';
   return `<div class="item${item.done?' done':''}" id="item-${item.id}">
@@ -538,9 +611,15 @@ function setFilter(btn){
   renderItems();
 }
 function toggleCycleFields(){
-  const isOnetime=document.getElementById('fCycle').value==='onetime';
-  document.getElementById('recurringFields').style.display=isOnetime?'none':'block';
+  const cycle=document.getElementById('fCycle').value;
+  const isOnetime=cycle==='onetime';
+  const isWeekly=cycle==='weekly';
+  const isYearly=cycle==='yearly';
+  document.getElementById('recurringFields').style.display=(!isOnetime&&!isWeekly)?'block':'none';
+  document.getElementById('weeklyField').style.display=isWeekly?'block':'none';
+  document.getElementById('yearlyMonthField').style.display=isYearly?'block':'none';
   document.getElementById('onetimeField').style.display=isOnetime?'block':'none';
+  document.getElementById('fDayLabel').textContent=isYearly?'引落日（毎年）':'引落日（毎月）';
 }
 function openModal(id){
   editingId=id||null;
@@ -553,10 +632,14 @@ function openModal(id){
     document.getElementById('fCycle').value=it.cycle;
     document.getElementById('fNote').value=it.note||'';
     if(it.cycle==='onetime')document.getElementById('fDate').value=it.date||'';
-    else document.getElementById('fDay').value=it.day;
+    else document.getElementById('fDay').value=it.day||'';
+    document.getElementById('fMonth').value=it.month||new Date().getMonth()+1;
+    document.getElementById('fWeekday').value=Number.isInteger(it.weekday)?it.weekday:new Date().getDay();
   } else {
     ['fName','fAmount','fDay','fNote'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('fDate').value='';
+    document.getElementById('fMonth').value=new Date().getMonth()+1;
+    document.getElementById('fWeekday').value=new Date().getDay();
     document.getElementById('fCat').value='サブスク';
     document.getElementById('fCycle').value='monthly';
   }
@@ -578,10 +661,20 @@ function saveItem(){
     const date=document.getElementById('fDate').value;
     if(!date){alert('支払日を入力してください');return;}
     itemData={name,amount,cat,cycle,date,note,done:false};
+  } else if(cycle==='weekly'){
+    const weekday=parseInt(document.getElementById('fWeekday').value);
+    if(weekday<0||weekday>6){alert('引落曜日を選択してください');return;}
+    itemData={name,amount,cat,cycle,weekday,note};
   } else {
     const day=parseInt(document.getElementById('fDay').value);
     if(!day||day<1||day>31){alert('引落日を正しく入力してください');return;}
-    itemData={name,amount,cat,cycle,day,note};
+    if(cycle==='yearly'){
+      const month=parseInt(document.getElementById('fMonth').value);
+      if(!month||month<1||month>12){alert('引落月を選択してください');return;}
+      itemData={name,amount,cat,cycle,month,day,note};
+    } else {
+      itemData={name,amount,cat,cycle,day,note};
+    }
   }
   if(editingId){
     const idx=items.findIndex(i=>i.id===editingId);
@@ -597,7 +690,7 @@ function deleteItem(id){
 }
 function editItem(id){openModal(id);}
 
-function render(){renderSummary();renderItems();}
+function render(){renderSummary();renderItems();if(document.getElementById('page-calendar').classList.contains('active'))renderCalendar();}
 render();
 </script>
 </body>
