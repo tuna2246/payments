@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="支払い管理" />
+<meta name="theme-color" content="#ffffff" />
+<title>支払い管理</title>
+<link rel="manifest" href="manifest.json" />
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.1);
+    --border-med: rgba(0,0,0,0.18);
+    --text: #1a1a1a;
+    --text-2: #666;
+    --text-3: #999;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111110;
+      --surface: #1e1e1c;
+      --border: rgba(255,255,255,0.1);
+      --border-med: rgba(255,255,255,0.18);
+      --text: #f0efe9;
+      --text-2: #999;
+      --text-3: #666;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; color: var(--text); }
+
+  /* Header */
+  .header {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg);
+    padding: calc(var(--safe-top) + 16px) 20px 12px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+  .header-add {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--text); color: var(--bg);
+    border: none; font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 300; line-height: 1;
+  }
+
+  /* Content */
+  .content { padding: 16px 20px calc(var(--safe-bottom) + 24px); max-width: 480px; margin: 0 auto; }
+
+  /* Summary cards */
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .summary-wide { grid-column: span 2; }
+  .stat {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--text-2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .stat-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .stat-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+  /* Filter pills */
+  .filters { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 16px; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .pill {
+    white-space: nowrap; border: 0.5px solid var(--border-med);
+    border-radius: 20px; padding: 6px 14px; font-size: 13px;
+    background: none; color: var(--text-2); cursor: pointer; font-weight: 500;
+  }
+  .pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* Section label */
+  .section-label { font-size: 12px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+
+  /* Item list */
+  .items { display: flex; flex-direction: column; gap: 8px; }
+  .item {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    position: relative;
+  }
+  .item-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .item-body { flex: 1; min-width: 0; }
+  .item-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+  .cat-tag { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 6px; }
+  .item-note { font-size: 12px; color: var(--text-3); }
+  .item-right { text-align: right; flex-shrink: 0; }
+  .item-amount { font-size: 16px; font-weight: 700; }
+  .item-due { font-size: 12px; margin-top: 3px; font-weight: 500; padding: 2px 8px; border-radius: 6px; display: inline-block; }
+  .due-ok { background: #e8f5e0; color: #2e7d32; }
+  .due-soon { background: #fff4e0; color: #a05c00; }
+  .due-urgent { background: #fde8e8; color: #c0392b; }
+  @media (prefers-color-scheme: dark) {
+    .due-ok { background: #1b3620; color: #66bb6a; }
+    .due-soon { background: #2d2410; color: #ffb74d; }
+    .due-urgent { background: #2d1414; color: #ef9a9a; }
+  }
+
+  /* Swipe actions */
+  .item-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .act-btn {
+    flex: 1; padding: 8px; border-radius: 8px; border: 0.5px solid var(--border);
+    font-size: 13px; font-weight: 500; cursor: pointer; background: none; color: var(--text-2);
+  }
+  .act-btn.delete { color: #c0392b; border-color: #f5c0c0; }
+  @media (prefers-color-scheme: dark) {
+    .act-btn.delete { color: #ef9a9a; border-color: #5c2020; }
+  }
+
+  /* Empty */
+  .empty { text-align: center; padding: 48px 20px; color: var(--text-3); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,0,0.4); align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); width: 100%; max-width: 480px;
+    border-radius: 20px 20px 0 0; padding: 0 20px calc(var(--safe-bottom) + 20px);
+    max-height: 92vh; overflow-y: auto;
+  }
+  .modal-handle { width: 36px; height: 4px; background: var(--border-med); border-radius: 2px; margin: 12px auto 16px; }
+  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 12px; color: var(--text-2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .form-row input, .form-row select {
+    width: 100%; background: var(--bg); border: 0.5px solid var(--border-med);
+    border-radius: 10px; padding: 12px 14px; font-size: 16px; color: var(--text);
+    -webkit-appearance: none; outline: none;
+  }
+  .form-row input:focus, .form-row select:focus { border-color: var(--text); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+  .btn { flex: 1; padding: 14px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; }
+  .btn-cancel { background: var(--bg); color: var(--text-2); border: 0.5px solid var(--border-med); }
+  .btn-save { background: var(--text); color: var(--bg); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <h1>💳 支払い管理</h1>
+    <button class="header-add" onclick="openModal()" aria-label="追加">+</button>
+  </div>
+</header>
+
+<div class="content">
+  <div class="summary" id="summary"></div>
+
+  <div class="filters" id="filters">
+    <button class="pill active" data-cat="all" onclick="setFilter(this)">すべて</button>
+    <button class="pill" data-cat="サブスク" onclick="setFilter(this)">サブスク</button>
+    <button class="pill" data-cat="ローン" onclick="setFilter(this)">ローン</button>
+    <button class="pill" data-cat="カード" onclick="setFilter(this)">カード</button>
+    <button class="pill" data-cat="その他" onclick="setFilter(this)">その他</button>
+  </div>
+
+  <div class="section-label">支払い一覧</div>
+  <div class="items" id="items"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modalTitle">支払いを追加</h2>
+    <div class="form-row">
+      <label>名前</label>
+      <input id="fName" type="text" placeholder="例: Netflix、住宅ローン" />
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>金額（円）</label>
+        <input id="fAmount" type="number" inputmode="numeric" placeholder="1500" />
+      </div>
+      <div class="form-row">
+        <label>カテゴリ</label>
+        <select id="fCat">
+          <option>サブスク</option>
+          <option>ローン</option>
+          <option>カード</option>
+          <option>その他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>引落日（毎月）</label>
+        <input id="fDay" type="number" inputmode="numeric" min="1" max="31" placeholder="15" />
+      </div>
+      <div class="form-row">
+        <label>サイクル</label>
+        <select id="fCycle">
+          <option value="monthly">毎月</option>
+          <option value="yearly">毎年</option>
+          <option value="weekly">毎週</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>メモ（任意）</label>
+      <input id="fNote" type="text" placeholder="例: 家族プラン、楽天カード" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-save" onclick="saveItem()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS = { サブスク: '📺', ローン: '🏦', カード: '💳', その他: '📋' };
+const CAT_COLORS = {
+  サブスク: { bg: '#e6f1fb', text: '#185FA5' },
+  ローン:   { bg: '#faeeda', text: '#854F0B' },
+  カード:   { bg: '#fbeaf0', text: '#993556' },
+  その他:   { bg: '#eaf3de', text: '#3B6D11' },
+};
+const CYCLES = { monthly: '毎月', yearly: '毎年', weekly: '毎週' };
+
+let items = JSON.parse(localStorage.getItem('payment_items') || '[]');
+let nextId = parseInt(localStorage.getItem('payment_next_id') || '1');
+let editingId = null;
+let currentFilter = 'all';
+let expandedId = null;
+
+function save() {
+  localStorage.setItem('payment_items', JSON.stringify(items));
+  localStorage.setItem('payment_next_id', String(nextId));
+}
+
+function daysUntil(day) {
+  const t = new Date();
+  let next = new Date(t.getFullYear(), t.getMonth(), day);
+  if (next <= t) next = new Date(t.getFullYear(), t.getMonth() + 1, day);
+  return Math.ceil((next - t) / 86400000);
+}
+
+function monthlyEquiv(item) {
+  if (item.cycle === 'yearly') return Math.round(item.amount / 12);
+  if (item.cycle === 'weekly') return Math.round(item.amount * 52 / 12);
+  return item.amount;
+}
+
+function renderSummary() {
+  const total = items.reduce((s, i) => s + monthlyEquiv(i), 0);
+  const nearest = items.length
+    ? items.slice().sort((a, b) => daysUntil(a.day) - daysUntil(b.day))[0]
+    : null;
+  document.getElementById('summary').innerHTML = `
+    <div class="stat summary-wide">
+      <div class="stat-label">月額合計（目安）</div>
+      <div class="stat-value">¥${total.toLocaleString()}</div>
+      <div class="stat-sub">${items.length}件 登録中</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">年額換算</div>
+      <div class="stat-value" style="font-size:20px">¥${(total * 12).toLocaleString()}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">次の引落</div>
+      <div class="stat-value" style="font-size:20px">${nearest ? daysUntil(nearest.day) + '日後' : '—'}</div>
+      <div class="stat-sub">${nearest ? nearest.name : ''}</div>
+    </div>
+  `;
+}
+
+function renderItems() {
+  const filtered = currentFilter === 'all' ? items : items.filter(i => i.cat === currentFilter);
+  const sorted = filtered.slice().sort((a, b) => daysUntil(a.day) - daysUntil(b.day));
+  const el = document.getElementById('items');
+  if (!sorted.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>まだ登録がありません<br>「＋」ボタンから追加してください</p></div>`;
+    return;
+  }
+  el.innerHTML = sorted.map(item => {
+    const d = daysUntil(item.day);
+    const dueCls = d <= 3 ? 'due-urgent' : d <= 7 ? 'due-soon' : 'due-ok';
+    const cc = CAT_COLORS[item.cat] || CAT_COLORS['その他'];
+    const expanded = expandedId === item.id;
+    return `
+    <div class="item" id="item-${item.id}">
+      <div class="item-icon" style="background:${cc.bg}">${ICONS[item.cat] || '📋'}</div>
+      <div class="item-body" onclick="toggleExpand(${item.id})">
+        <div class="item-name">${item.name}</div>
+        <div class="item-meta">
+          <span class="cat-tag" style="background:${cc.bg};color:${cc.text}">${item.cat}</span>
+          <span class="item-note">${CYCLES[item.cycle]}${item.note ? ' · ' + item.note : ''}</span>
+        </div>
+        ${expanded ? `<div class="item-actions">
+          <button class="act-btn" onclick="event.stopPropagation();editItem(${item.id})">✏️ 編集</button>
+          <button class="act-btn delete" onclick="event.stopPropagation();deleteItem(${item.id})">🗑 削除</button>
+        </div>` : ''}
+      </div>
+      <div class="item-right">
+        <div class="item-amount">¥${item.amount.toLocaleString()}</div>
+        <div class="item-due ${dueCls}">${item.day}日 / あと${d}日</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function render() { renderSummary(); renderItems(); }
+
+function toggleExpand(id) {
+  expandedId = expandedId === id ? null : id;
+  renderItems();
+}
+
+function setFilter(btn) {
+  document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = btn.dataset.cat;
+  renderItems();
+}
+
+function openModal(id) {
+  editingId = id || null;
+  const overlay = document.getElementById('modalOverlay');
+  document.getElementById('modalTitle').textContent = id ? '支払いを編集' : '支払いを追加';
+  if (id) {
+    const it = items.find(i => i.id === id);
+    document.getElementById('fName').value = it.name;
+    document.getElementById('fAmount').value = it.amount;
+    document.getElementById('fCat').value = it.cat;
+    document.getElementById('fDay').value = it.day;
+    document.getElementById('fCycle').value = it.cycle;
+    document.getElementById('fNote').value = it.note || '';
+  } else {
+    ['fName','fAmount','fDay','fNote'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fCat').value = 'サブスク';
+    document.getElementById('fCycle').value = 'monthly';
+  }
+  overlay.classList.add('open');
+  setTimeout(() => document.getElementById('fName').focus(), 100);
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function handleOverlayClick(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+function saveItem() {
+  const name = document.getElementById('fName').value.trim();
+  const amount = parseInt(document.getElementById('fAmount').value);
+  const cat = document.getElementById('fCat').value;
+  const day = parseInt(document.getElementById('fDay').value);
+  const cycle = document.getElementById('fCycle').value;
+  const note = document.getElementById('fNote').value.trim();
+  if (!name || !amount || !day || day < 1 || day > 31) {
+    alert('名前・金額・引落日を正しく入力してください');
+    return;
+  }
+  if (editingId) {
+    const idx = items.findIndex(i => i.id === editingId);
+    items[idx] = { id: editingId, name, amount, cat, day, cycle, note };
+  } else {
+    items.push({ id: nextId++, name, amount, cat, day, cycle, note });
+  }
+  save();
+  closeModal();
+  render();
+}
+
+function deleteItem(id) {
+  if (!confirm('削除しますか？')) return;
+  items = items.filter(i => i.id !== id);
+  expandedId = null;
+  save();
+  render();
+}
+
+function editItem(id) { openModal(id); }
+
+render();
+</script>
+</body>
+</html>
